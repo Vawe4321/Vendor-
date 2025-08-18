@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">VendorApp</string>
+    <color name="notification_color">#FF6B35</color>
+</resources>
