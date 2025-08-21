@@ -869,7 +869,7 @@ const HubScreen: React.FC = () => {
           {/* Avg. kitchen preparation time */}
           <View style={styles.kitchenEfficiencyCard}>
             <Text style={styles.kitchenEfficiencyLabel}>Avg. kitchen preparation time</Text>
-            <Text style={styles.kitchenEfficiencyValue}>53 mins</Text>
+            <Text style={styles.kitchenEfficiencyValue}>30 mins</Text>
             <View style={styles.kitchenEfficiencyChange}>
               <Icon name="keyboard-arrow-up" size={16} color="#F44336" />
               <Text style={styles.kitchenEfficiencyChangeText}>1%</Text>

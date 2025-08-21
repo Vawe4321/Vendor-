@@ -187,7 +187,7 @@ const OrderDashboardScreen: React.FC = () => {
   );
 
   // Mock data for different order states (similar to Zomato restaurant partner app)
-  const newOrders = [
+  const [newOrders, setNewOrders] = useState<any[]>([
     {
       id: '849120',
       status: 'NEW',
@@ -221,9 +221,9 @@ const OrderDashboardScreen: React.FC = () => {
       preparationTime: '30-35 mins',
       isUrgent: false,
     },
-  ];
+  ]);
 
-  const preparingOrders = [
+  const [preparingOrders, setPreparingOrders] = useState<any[]>([
     {
       id: '849115',
       status: 'PREPARING',
@@ -246,9 +246,9 @@ const OrderDashboardScreen: React.FC = () => {
       estimatedTime: '12 mins remaining',
       progress: 75,
     },
-  ];
+  ]);
 
-  const readyOrders = [
+  const [readyOrders, setReadyOrders] = useState<any[]>([
     {
       id: '849113',
       status: 'READY',
@@ -271,9 +271,9 @@ const OrderDashboardScreen: React.FC = () => {
       waitingTime: '5 mins',
       isHot: false,
     },
-  ];
+  ]);
 
-  const outForDeliveryOrders = [
+  const [outForDeliveryOrders, setOutForDeliveryOrders] = useState<any[]>([
     {
       id: '849111',
       status: 'OUT FOR DELIVERY',
@@ -298,10 +298,10 @@ const OrderDashboardScreen: React.FC = () => {
       driverName: 'Suresh Reddy',
       driverPhone: '+91 98765 43211',
     },
-  ];
+  ]);
 
   // Order data for completed orders
-  const completedOrders = [
+  const [completedOrders, setCompletedOrders] = useState<any[]>([
     {
       id: '849110',
       status: 'DELIVERED',
@@ -435,9 +435,165 @@ const OrderDashboardScreen: React.FC = () => {
       warning: 'Order was not received timely',
       isDelivered: true,
     },
-  ];
+  ]);
+
+  // Handlers to move orders across statuses without changing active tab
+  const startPreparing = (orderId: string) => {
+    setNewOrders(prev => {
+      const index = prev.findIndex(o => o.id === orderId);
+      if (index === -1) return prev;
+      const order = {
+        ...prev[index],
+        status: 'PREPARING',
+        timestamp: 'Started just now',
+        estimatedTime: '20 mins remaining',
+        progress: 10,
+      };
+      setPreparingOrders(p => [order, ...p]);
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const markReady = (orderId: string) => {
+    setPreparingOrders(prev => {
+      const index = prev.findIndex(o => o.id === orderId);
+      if (index === -1) return prev;
+      const order = {
+        ...prev[index],
+        status: 'READY',
+        timestamp: 'Ready just now',
+        waitingTime: 'Just now',
+        isHot: true,
+      } as any;
+      setReadyOrders(p => [order, ...p]);
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const markOutForDelivery = (orderId: string) => {
+    setReadyOrders(prev => {
+      const index = prev.findIndex(o => o.id === orderId);
+      if (index === -1) return prev;
+      const order = {
+        ...prev[index],
+        status: 'OUT FOR DELIVERY',
+        timestamp: 'Picked up just now',
+        estimatedDelivery: '20 mins',
+        driverName: 'Assigned Driver',
+        driverPhone: '+91 90000 00000',
+      } as any;
+      setOutForDeliveryOrders(p => [order, ...p]);
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const markDelivered = (orderId: string) => {
+    setOutForDeliveryOrders(prev => {
+      const index = prev.findIndex(o => o.id === orderId);
+      if (index === -1) return prev;
+      const order = {
+        ...prev[index],
+        status: 'DELIVERED',
+        timestamp: 'Delivered just now',
+        isDelivered: true,
+      } as any;
+      setCompletedOrders(p => [order, ...p]);
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+  };
+
+  const rejectOrder = (orderId: string) => {
+    setNewOrders(prev => {
+      const index = prev.findIndex(o => o.id === orderId);
+      if (index === -1) return prev;
+      const order = {
+        ...prev[index],
+        status: 'REJECTED BY RESTAURANT',
+        timestamp: 'Rejected just now',
+        warning: 'Order closed',
+        rejectionReason: 'The order was closed as per the rejection policy.',
+        isDelivered: false,
+      } as any;
+      setCompletedOrders(p => [order, ...p]);
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+  };
 
   const renderOrderCard = ({ item }: { item: any }) => {
+    const renderStatusActions = (order: any) => {
+      if (!isOnline) return null;
+
+      const onPress = (label: string) => () => {
+        // Apply local state transitions to keep the user on the same tab
+        switch (label) {
+          case 'Start Preparing':
+            startPreparing(order.id);
+            break;
+          case 'Mark Ready':
+            markReady(order.id);
+            break;
+          case 'Out for delivery':
+            markOutForDelivery(order.id);
+            break;
+          case 'Mark Delivered':
+            markDelivered(order.id);
+            break;
+          case 'Reject':
+            rejectOrder(order.id);
+            break;
+        }
+      };
+
+      switch (order.status) {
+        case 'NEW':
+          return (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.ctaButton, styles.secondaryCta]} onPress={onPress('Reject')}>
+                <Text style={[styles.ctaText, styles.secondaryCtaText]}>Reject</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.ctaButton, styles.primaryCta]} onPress={onPress('Start Preparing')}>
+                <Text style={styles.ctaText}>Start Preparing</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        case 'PREPARING':
+          return (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.ctaButton, styles.primaryCta]} onPress={onPress('Mark Ready')}>
+                <Text style={styles.ctaText}>Mark Ready</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        case 'READY':
+          return (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.ctaButton, styles.primaryCta]} onPress={onPress('Out for delivery')}>
+                <Text style={styles.ctaText}>Out for delivery</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        case 'OUT FOR DELIVERY':
+          return (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={[styles.ctaButton, styles.primaryCta]} onPress={onPress('Mark Delivered')}>
+                <Text style={styles.ctaText}>Mark Delivered</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        default:
+          return null;
+      }
+    };
     // Determine status badge style based on order status
     const getStatusBadgeStyle = () => {
       switch (item.status) {
@@ -576,6 +732,8 @@ const OrderDashboardScreen: React.FC = () => {
             <Text style={styles.successText}>✅ {item.success}</Text>
           </View>
         )}
+
+        {renderStatusActions(item)}
       </View>
     );
   };
@@ -1217,6 +1375,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#3B82F6',
     textAlign: 'center',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  ctaButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  primaryCta: {
+    backgroundColor: '#111827',
+  },
+  secondaryCta: {
+    backgroundColor: '#E5E7EB',
+  },
+  ctaText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  secondaryCtaText: {
+    color: '#111827',
   },
   notificationContainer: {
     position: 'relative',
